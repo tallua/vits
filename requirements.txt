@@ -8,3 +8,8 @@ tensorboard
 torch
 torchvision
 Unidecode
+
+jamo
+ko_pron
+unidecode
+pyopenjtalk
