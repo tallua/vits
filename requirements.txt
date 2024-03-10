@@ -13,3 +13,5 @@ jamo
 ko_pron
 unidecode
 pyopenjtalk
+inflect
+eng_to_ipa

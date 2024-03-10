@@ -25,7 +25,8 @@ class TextAudioLoader(torch.utils.data.Dataset):
         self.filter_length  = hparams.filter_length 
         self.hop_length     = hparams.hop_length 
         self.win_length     = hparams.win_length
-        self.sampling_rate  = hparams.sampling_rate 
+        self.sampling_rate  = hparams.sampling_rate
+        self.symbols        = hparams.symbols
 
         self.cleaned_text = getattr(hparams, "cleaned_text", False)
 
@@ -84,7 +85,7 @@ class TextAudioLoader(torch.utils.data.Dataset):
         if self.cleaned_text:
             text_norm = cleaned_text_to_sequence(text)
         else:
-            text_norm = text_to_sequence(text, self.text_cleaners)
+            text_norm = text_to_sequence(text, self.symbols, self.text_cleaners)
         if self.add_blank:
             text_norm = commons.intersperse(text_norm, 0)
         text_norm = torch.LongTensor(text_norm)
@@ -222,7 +223,7 @@ class TextAudioSpeakerLoader(torch.utils.data.Dataset):
         if self.cleaned_text:
             text_norm = cleaned_text_to_sequence(text)
         else:
-            text_norm = text_to_sequence(text, self.text_cleaners)
+            text_norm = text_to_sequence(text, self.symbols, self.text_cleaners)
         if self.add_blank:
             text_norm = commons.intersperse(text_norm, 0)
         text_norm = torch.LongTensor(text_norm)

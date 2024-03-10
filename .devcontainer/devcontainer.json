@@ -5,5 +5,5 @@
 	"build": {
 		"dockerfile": "Dockerfile"
 	},
-	"runArgs": [ "--gpus", "all" ]
+	"runArgs": [ "--gpus", "all", "--ipc=host", "--shm-size=16G" ]
 }
