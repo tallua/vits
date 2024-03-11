@@ -4,6 +4,7 @@ import re
 from text.japanese import japanese_to_romaji_with_accent, japanese_to_ipa, japanese_to_ipa2, japanese_to_ipa3
 from text.korean import latin_to_hangul, number_to_hangul, divide_hangul, korean_to_lazy_ipa, korean_to_ipa
 from text.english import english_to_lazy_ipa, english_to_ipa2, english_to_lazy_ipa2
+from text.chinese import chinese_to_ipa, chinese_to_lazy_ipa
 
 
 def japanese_cleaners(text):
@@ -25,7 +26,9 @@ def korean_cleaners(text):
     return text
 
 
-def jke_cleaners(text):
+def cjke_cleaners(text):
+    text = re.sub(r'\[ZH\](.*?)\[ZH\]', lambda x: chinese_to_lazy_ipa(x.group(1)).replace(
+        'ʧ', 'tʃ').replace('ʦ', 'ts').replace('ɥan', 'ɥæn')+' ', text)
     text = re.sub(r'\[JA\](.*?)\[JA\]', lambda x: japanese_to_ipa(x.group(1)).replace('ʧ', 'tʃ').replace(
         'ʦ', 'ts').replace('ɥan', 'ɥæn').replace('ʥ', 'dz')+' ', text)
     text = re.sub(r'\[KO\](.*?)\[KO\]',
@@ -37,7 +40,9 @@ def jke_cleaners(text):
     return text
 
 
-def jke_cleaners2(text):
+def cjke_cleaners2(text):
+    text = re.sub(r'\[ZH\](.*?)\[ZH\]',
+                  lambda x: chinese_to_ipa(x.group(1))+' ', text)
     text = re.sub(r'\[JA\](.*?)\[JA\]',
                   lambda x: japanese_to_ipa2(x.group(1))+' ', text)
     text = re.sub(r'\[KO\](.*?)\[KO\]',

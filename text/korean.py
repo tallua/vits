@@ -1,3 +1,5 @@
+""" from https://github.com/Plachtaa/VITS-fast-fine-tuning """
+
 import re
 from jamo import h2j, j2hcj
 import ko_pron
