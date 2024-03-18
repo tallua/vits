@@ -52,3 +52,49 @@ def cjke_cleaners2(text):
     text = re.sub(r'\s+$', '', text)
     text = re.sub(r'([^\.,!\?\-…~])$', r'\1.', text)
     return text
+
+def ipa_cleaner(text):
+    
+    def get_lang_code(char):
+        def is_english(char):
+            return 'a' <= char <= 'z' or 'A' <= char <= 'Z'
+        def is_japanese(char):
+            return '\u3040' <= char <= '\u309F' or '\u30A0' <= char <= '\u30FF' or '\u4E00' <= char <= '\u9FAF'
+        def is_korean(char):
+            return '\uAC00' <= char <= '\uD7AF'
+
+        if is_japanese(char):
+            return 'jp'
+        if is_korean(char):
+            return 'kr'
+        if is_english(char):
+            return 'en'
+        return ''
+
+    def convert_to_ipa(seq, lang):
+        if lang == 'jp':
+            return  japanese_to_ipa2(seq)
+        elif lang == 'kr':
+            return  korean_to_ipa(seq)
+        elif lang == 'en':
+            return  english_to_ipa2(seq)
+        return ''
+
+    cleaned = ''
+    lang=''
+    subseq=''
+    for char in text:
+        next_lang=get_lang_code(char)
+        if next_lang == '' or lang == next_lang:
+            subseq += char
+        elif len(subseq) != 0:
+            cleaned += convert_to_ipa(subseq, lang) + ' '
+            subseq=char
+            lang=next_lang
+        else:
+            subseq=char
+            lang=next_lang
+    if len(subseq) != 0:
+        cleaned += convert_to_ipa(subseq, lang) + ' '
+    return cleaned
+            

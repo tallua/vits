@@ -15,3 +15,6 @@ unidecode
 pyopenjtalk
 inflect
 eng_to_ipa
+pypinyin
+jieba
+cn2an
