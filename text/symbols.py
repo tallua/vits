@@ -12,7 +12,7 @@ additional_ipa = ['\n', ' ', '!', '"', '#', "'", '(', ')', '*', '+', ',', '-', '
 
 # Export all symbols:
 symbols = [_pad] + list(_punctuation) + list(_letters) + list(_letters_ipa) + additional_ipa
-symbols = list(set(symbols))
+symbols = list(dict.fromkeys(symbols))
 
 # Special symbol ids
 SPACE_ID = symbols.index(" ")
