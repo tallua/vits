@@ -3,6 +3,7 @@ import json
 import argparse
 import itertools
 import math
+import time
 import torch
 from torch import nn, optim
 from torch.nn import functional as F
@@ -44,10 +45,11 @@ def main():
 
   n_gpus = torch.cuda.device_count()
   os.environ['MASTER_ADDR'] = 'localhost'
-  os.environ['MASTER_PORT'] = '80000'
+  os.environ['MASTER_PORT'] = '61353'
 
   hps = utils.get_hparams()
-  mp.spawn(run, nprocs=n_gpus, args=(n_gpus, hps,))
+  run(0, n_gpus, hps)
+  #mp.spawn(run, nprocs=n_gpus, args=(n_gpus, hps,))
 
 
 def run(rank, n_gpus, hps):
@@ -103,10 +105,12 @@ def run(rank, n_gpus, hps):
   try:
     _, _, _, epoch_str = utils.load_checkpoint(utils.latest_checkpoint_path(hps.model_dir, "G_*.pth"), net_g, optim_g)
     _, _, _, epoch_str = utils.load_checkpoint(utils.latest_checkpoint_path(hps.model_dir, "D_*.pth"), net_d, optim_d)
+    print(f"loaded: {epoch_str}")
     global_step = (epoch_str - 1) * len(train_loader)
-  except:
+  except Exception as e:
     epoch_str = 1
     global_step = 0
+    print(f"load failed: {e}")
 
   scheduler_g = torch.optim.lr_scheduler.ExponentialLR(optim_g, gamma=hps.train.lr_decay, last_epoch=epoch_str-2)
   scheduler_d = torch.optim.lr_scheduler.ExponentialLR(optim_d, gamma=hps.train.lr_decay, last_epoch=epoch_str-2)
@@ -226,6 +230,13 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, schedulers, scaler, loade
         evaluate(hps, net_g, eval_loader, writer_eval)
         utils.save_checkpoint(net_g, optim_g, hps.train.learning_rate, epoch, os.path.join(hps.model_dir, "G_{}.pth".format(global_step)))
         utils.save_checkpoint(net_d, optim_d, hps.train.learning_rate, epoch, os.path.join(hps.model_dir, "D_{}.pth".format(global_step)))
+
+        if os.path.exists(os.path.join(hps.model_dir, "G_{}.pth".format(global_step - 5000))):
+          os.remove(os.path.join(hps.model_dir, "G_{}.pth".format(global_step - 5000)))
+        if os.path.exists(os.path.join(hps.model_dir, "D_{}.pth".format(global_step - 5000))):
+          os.remove(os.path.join(hps.model_dir, "D_{}.pth".format(global_step - 5000)))
+
+        time.sleep(30)
     global_step += 1
   
   if rank == 0:
