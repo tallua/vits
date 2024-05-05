@@ -32,7 +32,7 @@ from losses import (
   kl_loss
 )
 from mel_processing import mel_spectrogram_torch, spec_to_mel_torch
-from text.symbols import symbols
+from text import get_symbol_len, load_symbols
 
 
 torch.backends.cudnn.benchmark = True
@@ -45,7 +45,7 @@ def main():
 
   n_gpus = torch.cuda.device_count()
   os.environ['MASTER_ADDR'] = 'localhost'
-  os.environ['MASTER_PORT'] = '61353'
+  os.environ['MASTER_PORT'] = '8000'
 
   hps = utils.get_hparams()
   run(0, n_gpus, hps)
@@ -60,6 +60,8 @@ def run(rank, n_gpus, hps):
     utils.check_git_hash(hps.model_dir)
     writer = SummaryWriter(log_dir=hps.model_dir)
     writer_eval = SummaryWriter(log_dir=os.path.join(hps.model_dir, "eval"))
+    
+  load_symbols(hps.data.symbol_file)
 
   dist.init_process_group(backend='nccl', init_method='env://', world_size=n_gpus, rank=rank)
   torch.manual_seed(hps.train.seed)
@@ -83,7 +85,7 @@ def run(rank, n_gpus, hps):
         drop_last=False, collate_fn=collate_fn)
 
   net_g = SynthesizerTrn(
-      len(symbols),
+      get_symbol_len(),
       hps.data.filter_length // 2 + 1,
       hps.train.segment_size // hps.data.hop_length,
       n_speakers=hps.data.n_speakers,
@@ -231,12 +233,14 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, schedulers, scaler, loade
         utils.save_checkpoint(net_g, optim_g, hps.train.learning_rate, epoch, os.path.join(hps.model_dir, "G_{}.pth".format(global_step)))
         utils.save_checkpoint(net_d, optim_d, hps.train.learning_rate, epoch, os.path.join(hps.model_dir, "D_{}.pth".format(global_step)))
 
-        if os.path.exists(os.path.join(hps.model_dir, "G_{}.pth".format(global_step - 5000))):
-          os.remove(os.path.join(hps.model_dir, "G_{}.pth".format(global_step - 5000)))
-        if os.path.exists(os.path.join(hps.model_dir, "D_{}.pth".format(global_step - 5000))):
-          os.remove(os.path.join(hps.model_dir, "D_{}.pth".format(global_step - 5000)))
+        if (global_step - 5000) % 100000 != 0:
+          if os.path.exists(os.path.join(hps.model_dir, "G_{}.pth".format(global_step - 5000))):
+            os.remove(os.path.join(hps.model_dir, "G_{}.pth".format(global_step - 5000)))
+          if os.path.exists(os.path.join(hps.model_dir, "D_{}.pth".format(global_step - 5000))):
+            os.remove(os.path.join(hps.model_dir, "D_{}.pth".format(global_step - 5000)))
 
-        time.sleep(30)
+        if global_step > 10:
+          time.sleep(45)
     global_step += 1
   
   if rank == 0:

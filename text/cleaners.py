@@ -1,60 +1,16 @@
 """ from https://github.com/Plachtaa/VITS-fast-fine-tuning """
 
-import re
+from text.english import english_to_lazy_ipa, english_to_ipa2, english_to_lazy_ipa2
 from text.japanese import japanese_to_romaji_with_accent, japanese_to_ipa, japanese_to_ipa2, japanese_to_ipa3
 from text.korean import latin_to_hangul, number_to_hangul, divide_hangul, korean_to_lazy_ipa, korean_to_ipa
-from text.english import english_to_lazy_ipa, english_to_ipa2, english_to_lazy_ipa2
 from text.chinese import chinese_to_ipa, chinese_to_lazy_ipa
 
 
-def japanese_cleaners(text):
-    text = japanese_to_romaji_with_accent(text)
-    text = re.sub(r'([A-Za-z])$', r'\1.', text)
-    return text
 
-
-def japanese_cleaners2(text):
-    return japanese_cleaners(text).replace('ts', 'ʦ').replace('...', '…')
-
-
-def korean_cleaners(text):
-    '''Pipeline for Korean text'''
-    text = latin_to_hangul(text)
-    text = number_to_hangul(text)
-    text = divide_hangul(text)
-    text = re.sub(r'([\u3131-\u3163])$', r'\1.', text)
-    return text
-
-
-def cjke_cleaners(text):
-    text = re.sub(r'\[ZH\](.*?)\[ZH\]', lambda x: chinese_to_lazy_ipa(x.group(1)).replace(
-        'ʧ', 'tʃ').replace('ʦ', 'ts').replace('ɥan', 'ɥæn')+' ', text)
-    text = re.sub(r'\[JA\](.*?)\[JA\]', lambda x: japanese_to_ipa(x.group(1)).replace('ʧ', 'tʃ').replace(
-        'ʦ', 'ts').replace('ɥan', 'ɥæn').replace('ʥ', 'dz')+' ', text)
-    text = re.sub(r'\[KO\](.*?)\[KO\]',
-                  lambda x: korean_to_ipa(x.group(1))+' ', text)
-    text = re.sub(r'\[EN\](.*?)\[EN\]', lambda x: english_to_ipa2(x.group(1)).replace('ɑ', 'a').replace(
-        'ɔ', 'o').replace('ɛ', 'e').replace('ɪ', 'i').replace('ʊ', 'u')+' ', text)
-    text = re.sub(r'\s+$', '', text)
-    text = re.sub(r'([^\.,!\?\-…~])$', r'\1.', text)
-    return text
-
-
-def cjke_cleaners2(text):
-    text = re.sub(r'\[ZH\](.*?)\[ZH\]',
-                  lambda x: chinese_to_ipa(x.group(1))+' ', text)
-    text = re.sub(r'\[JA\](.*?)\[JA\]',
-                  lambda x: japanese_to_ipa2(x.group(1))+' ', text)
-    text = re.sub(r'\[KO\](.*?)\[KO\]',
-                  lambda x: korean_to_ipa(x.group(1))+' ', text)
-    text = re.sub(r'\[EN\](.*?)\[EN\]',
-                  lambda x: english_to_ipa2(x.group(1))+' ', text)
-    text = re.sub(r'\s+$', '', text)
-    text = re.sub(r'([^\.,!\?\-…~])$', r'\1.', text)
-    return text
-
-def ipa_cleaner(text):
-    
+# ---------------------------------------------------------------------------- #
+# |                                IPA cleaners                              | #
+# ---------------------------------------------------------------------------- #
+def ipa_cleaner(text, language):
     def get_lang_code(char):
         def is_english(char):
             return 'a' <= char <= 'z' or 'A' <= char <= 'Z'
@@ -73,22 +29,22 @@ def ipa_cleaner(text):
 
     def convert_to_ipa(seq, lang):
         if lang == 'jp':
-            return  japanese_to_ipa2(seq)
+            return japanese_to_ipa2(seq)
         elif lang == 'kr':
-            return  korean_to_ipa(seq)
+            return korean_to_ipa(seq)
         elif lang == 'en':
-            return  english_to_ipa2(seq)
+            return english_to_ipa2(seq)
         return ''
 
-    cleaned = ''
-    lang=''
+    cleaned=''
+    lang=language
     subseq=''
     for char in text:
         next_lang=get_lang_code(char)
-        if next_lang == '' or lang == next_lang:
-            subseq += char
+        if next_lang == '' or lang == next_lang or ((lang == 'kr' or lang == 'jp') and next_lang == 'en'):
+            subseq+=char
         elif len(subseq) != 0:
-            cleaned += convert_to_ipa(subseq, lang) + ' '
+            cleaned+=convert_to_ipa(subseq, lang) + ' '
             subseq=char
             lang=next_lang
         else:
@@ -97,4 +53,3 @@ def ipa_cleaner(text):
     if len(subseq) != 0:
         cleaned += convert_to_ipa(subseq, lang) + ' '
     return cleaned
-            

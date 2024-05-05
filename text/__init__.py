@@ -1,12 +1,12 @@
 """ from https://github.com/keithito/tacotron """
 from text import cleaners
-from text.symbols import symbols
 
+_symbols = {}
+_symbol_to_id = {}
+_id_to_symbol = {}
 
-# Mappings from symbol to numeric ID and vice versa:
-_symbol_to_id = {s: i for i, s in enumerate(symbols)}
-_id_to_symbol = {i: s for i, s in enumerate(symbols)}
-
+def get_symbol_len():
+  return len(_symbols)
 
 def text_to_sequence(text, cleaner_names):
   '''Converts a string of text to a sequence of IDs corresponding to the symbols in the text.
@@ -34,7 +34,7 @@ def cleaned_text_to_sequence(cleaned_text):
       List of integers corresponding to the symbols in the text
   '''
   sequence = [_symbol_to_id[symbol] for symbol in cleaned_text if symbol in _symbol_to_id.keys()]
-  return sequence
+  return list(map(int, cleaned_text.split("\t")))
 
 
 def sequence_to_text(sequence):
@@ -44,6 +44,17 @@ def sequence_to_text(sequence):
     s = _id_to_symbol[symbol_id]
     result += s
   return result
+
+
+def load_symbols(path):
+  import json
+  with open(path, 'r') as symbol_file:
+    global _symbol_to_id
+    global _id_to_symbol
+    global _symbols
+    _symbols = json.loads(symbol_file.read())
+    _symbol_to_id = {s: i for i, s in enumerate(_symbols)}
+    _id_to_symbol = {i: s for i, s in enumerate(_symbols)}
 
 
 def _clean_text(text, cleaner_names):
